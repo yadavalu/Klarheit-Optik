@@ -1,0 +1,2 @@
+Replace Stripe secret key in src/lib/stripe.ts with your actual Stripe secret key.
+Or configure vercel: Important Next Step for Vercel: To make sure payments actually work in your live Vercel app, don't forget to go to your Vercel Project Dashboard → Settings → Environment Variables and add your real Stripe keys: STRIPE_SECRET_KEY and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
