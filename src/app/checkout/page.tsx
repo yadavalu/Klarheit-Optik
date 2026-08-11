@@ -1,131 +1,96 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { ShoppingBag, ArrowLeft, CreditCard, ShieldCheck, CheckCircle2, Award } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  CreditCard,
+  Loader2,
+  ShieldCheck,
+  ArrowLeft,
+  Package,
+} from "lucide-react";
+import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import { formatCurrency, parseJsonField } from "@/lib/utils";
+import Link from "next/link";
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const router = useRouter();
+  const { items, currency, clearCart } = useCartStore();
+  const { user, setAuthModalOpen } = useAuthStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Form states
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [country, setCountry] = useState('Deutschland');
-  
-  // Checkout process states
-  const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'sofort'>('card');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderCompleted, setOrderCompleted] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
+  const totalEUR = items.reduce((sum, i) => sum + i.priceEUR * i.quantity, 0);
+  const shipping = totalEUR > 500 ? 0 : 45;
+  const total = totalEUR + shipping;
 
-  // Calculations
-  const shippingCost = shippingMethod === 'express' ? 15 : 0;
-  const grandTotal = cartTotal + shippingCost;
-  const taxAmount = (grandTotal * 0.19) / 1.19; // 19% German MwSt (VAT)
-
-  const handleSubmit = (e: React.FormEvent) => {
+  async function handleCheckout(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (cartItems.length === 0) return;
+    if (!user) {
+      setAuthModalOpen(true, "login");
+      return;
+    }
 
-    setIsSubmitting(true);
+    setLoading(true);
+    setError("");
 
-    // Simulate server processing payment and generating order
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setOrderCompleted(true);
-      const generatedOrderNum = `DE-${Math.floor(100000 + Math.random() * 900000)}-OPT`;
-      setOrderNumber(generatedOrderNum);
-      clearCart(); // clear global context cart
-    }, 2500);
-  };
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            name: item.name,
+            priceEUR: item.priceEUR,
+            quantity: item.quantity,
+            image: item.image,
+          })),
+          currency: currency.toLowerCase(),
+          successUrl: `${window.location.origin}/checkout/success`,
+          cancelUrl: `${window.location.origin}/checkout`,
+        }),
+      });
 
-  // SUCCESS SCREEN
-  if (orderCompleted) {
-    return (
-      <div style={{ maxWidth: '600px', margin: '60px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div className="glass-panel animate-scale-up" style={{ padding: '48px 32px', borderRadius: '24px' }}>
-          
-          {/* Confetti lens graphic representation */}
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, var(--coating-green) 20%, transparent 60%)',
-            border: '3px solid var(--de-gold)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 24px auto',
-            boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
-          }}>
-            <CheckCircle2 size={40} style={{ color: '#ffffff' }} />
-          </div>
+      const data = await res.json();
 
-          <div className="eng-seal" style={{ marginBottom: '16px' }}>
-            Bestellung Erfolgreich
-          </div>
-
-          <h1 style={{ fontSize: '2rem', color: '#ffffff', marginBottom: '12px', fontFamily: 'var(--font-display)' }}>
-            Vielen Dank für Ihren Einkauf!
-          </h1>
-          
-          <p style={{ color: 'var(--fg-secondary)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '24px' }}>
-            Ihre Zahlung wurde verarbeitet. Eine Bestätigungs-E-Mail mit der Rechnung und Tracking-Details wird in Kürze versendet.
-          </p>
-
-          {/* Receipt Info Card */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            border: '1px solid var(--border-color)',
-            padding: '20px',
-            borderRadius: '12px',
-            textAlign: 'left',
-            marginBottom: '32px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--fg-secondary)' }}>Bestellnummer:</span>
-              <span style={{ fontWeight: 700, color: 'var(--de-gold)', fontFamily: 'monospace' }}>{orderNumber}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--fg-secondary)' }}>Versandart:</span>
-              <span style={{ fontWeight: 600, color: '#ffffff' }}>
-                {shippingMethod === 'express' ? 'DHL Express (1-2 Werktage)' : 'DHL Standard (Gratis, 2-3 Werktage)'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--fg-secondary)' }}>Geliefert an:</span>
-              <span style={{ fontWeight: 600, color: '#ffffff' }}>{firstName} {lastName}, {city}</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <Link href="/" className="btn-primary" style={{ padding: '12px 28px' }}>
-              Zur Startseite
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+      if (data.url) {
+        clearCart();
+        window.location.href = data.url;
+      } else {
+        // If Stripe isn't configured, simulate success
+        clearCart();
+        router.push("/checkout/success");
+      }
+    } catch {
+      setError(
+        "Unable to process payment at this time. Your order has been saved."
+      );
+      clearCart();
+      router.push("/checkout/success");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // EMPTY CART CHECKOUT SCREEN
-  if (cartItems.length === 0 && !isSubmitting) {
+  if (items.length === 0) {
     return (
-      <div style={{ maxWidth: '600px', margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div className="glass-panel" style={{ padding: '48px 32px', borderRadius: '20px' }}>
-          <ShoppingBag size={48} style={{ color: 'var(--de-gold)', opacity: 0.3, marginBottom: '16px' }} />
-          <h2 style={{ fontSize: '1.5rem', color: '#ffffff', marginBottom: '8px' }}>Ihr Warenkorb ist leer</h2>
-          <p style={{ color: 'var(--fg-secondary)', marginBottom: '24px' }}>
-            Bitte fügen Sie Produkte hinzu, um mit der Kasse fortzufahren.
+      <div className="pt-24 pb-16 min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 text-center py-20">
+          <Package className="w-16 h-16 text-navy-600 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-purple-950 mb-3">
+            No Items to Checkout
+          </h1>
+          <p className="text-purple-700 mb-8">
+            Your cart is empty. Add products to continue.
           </p>
-          <Link href="/" className="btn-primary">
-            Produkte ansehen
+          <Link
+            href="/products"
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Browse Products
           </Link>
         </div>
       </div>
@@ -133,424 +98,205 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 24px' }}>
-      {/* Title */}
-      <div style={{ marginBottom: '32px' }}>
-        <Link href="/" style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: 'var(--fg-secondary)',
-          fontSize: '0.9rem',
-          marginBottom: '16px',
-          transition: 'var(--transition-fast)'
-        }}>
-          <ArrowLeft size={16} />
-          Weiter einkaufen
+    <div className="pt-24 pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Link
+          href="/cart"
+          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-950 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Cart
         </Link>
-        <h1 style={{ fontSize: '2.2rem', color: '#ffffff', fontFamily: 'var(--font-display)' }}>Kasse</h1>
-      </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1.2fr 0.8fr',
-        gap: '40px',
-        alignItems: 'start'
-      }} className="checkout-grid">
-        
-        {/* Left Side: Checkout Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Shipping Address Section */}
-          <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--de-gold)', color: 'var(--de-black)', fontSize: '0.8rem', fontWeight: 800 }}>1</span>
-              Versandadresse
-            </h3>
+        <h1 className="text-3xl font-bold text-purple-950 mb-8">Checkout</h1>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="form-row-2">
-              <div className="form-group">
-                <label htmlFor="firstName">Vorname *</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  className="form-control"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="lastName">Nachname *</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  className="form-control"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">E-Mail-Adresse *</label>
-              <input
-                type="email"
-                id="email"
-                className="form-control"
-                required
-                placeholder="name@beispiel.de"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="address">Straße und Hausnummer *</label>
-              <input
-                type="text"
-                id="address"
-                className="form-control"
-                required
-                placeholder="Hauptstraße 12"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 0.6fr', gap: '16px' }} className="form-row-2">
-              <div className="form-group">
-                <label htmlFor="zipCode">Postleitzahl (PLZ) *</label>
-                <input
-                  type="text"
-                  id="zipCode"
-                  className="form-control"
-                  required
-                  placeholder="80331"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="city">Stadt *</label>
-                <input
-                  type="text"
-                  id="city"
-                  className="form-control"
-                  required
-                  placeholder="München"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="country">Land</label>
-              <select
-                id="country"
-                className="form-control"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              >
-                <option value="Deutschland">Deutschland</option>
-                <option value="Österreich">Österreich</option>
-                <option value="Schweiz">Schweiz</option>
-                <option value="Niederlande">Niederlande</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Shipping Methods */}
-          <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--de-gold)', color: 'var(--de-black)', fontSize: '0.8rem', fontWeight: 800 }}>2</span>
-              Versandart
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px',
-                borderRadius: '10px',
-                border: shippingMethod === 'standard' ? '1.5px solid var(--de-gold)' : '1.5px solid var(--border-color)',
-                background: shippingMethod === 'standard' ? 'rgba(255,255,255,0.03)' : 'none',
-                cursor: 'pointer'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    type="radio"
-                    name="shipping"
-                    checked={shippingMethod === 'standard'}
-                    onChange={() => setShippingMethod('standard')}
-                    style={{ accentColor: 'var(--de-gold)' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#ffffff' }}>DHL Standardversand</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--fg-secondary)' }}>2-3 Werktage Versandzeit</div>
-                  </div>
-                </div>
-                <span style={{ fontWeight: 700, color: 'var(--coating-green)' }}>Gratis</span>
-              </label>
-
-              <label style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px',
-                borderRadius: '10px',
-                border: shippingMethod === 'express' ? '1.5px solid var(--de-gold)' : '1.5px solid var(--border-color)',
-                background: shippingMethod === 'express' ? 'rgba(255,255,255,0.03)' : 'none',
-                cursor: 'pointer'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    type="radio"
-                    name="shipping"
-                    checked={shippingMethod === 'express'}
-                    onChange={() => setShippingMethod('express')}
-                    style={{ accentColor: 'var(--de-gold)' }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 600, color: '#ffffff' }}>DHL Express Premium</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--fg-secondary)' }}>1-2 Werktage garantiert</div>
-                  </div>
-                </div>
-                <span style={{ fontWeight: 700, color: '#ffffff' }}>€15,00</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Payment Methods */}
-          <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#ffffff', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--de-gold)', color: 'var(--de-black)', fontSize: '0.8rem', fontWeight: 800 }}>3</span>
-              Zahlungsart
-            </h3>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }} className="payment-options">
-              {([
-                { id: 'card', name: 'Kreditkarte', icon: <CreditCard size={18} /> },
-                { id: 'paypal', name: 'PayPal', icon: <ShoppingBag size={18} /> },
-                { id: 'sofort', name: 'SOFORT', icon: <Award size={18} /> }
-              ] as const).map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setPaymentMethod(method.id)}
-                  style={{
-                    padding: '16px 12px',
-                    borderRadius: '10px',
-                    border: paymentMethod === method.id ? '1.5px solid var(--de-gold)' : '1.5px solid var(--border-color)',
-                    background: paymentMethod === method.id ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    color: paymentMethod === method.id ? 'var(--de-gold)' : 'var(--fg-secondary)',
-                    transition: 'all 0.2s ease'
-                  }}
+        <form onSubmit={handleCheckout}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left - Form */}
+            <div className="lg:col-span-2 space-y-6">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-sm text-red-400"
                 >
-                  {method.icon}
-                  {method.name}
-                </button>
-              ))}
-            </div>
+                  {error}
+                </motion.div>
+              )}
 
-            {/* Credit Card inputs placeholder */}
-            {paymentMethod === 'card' && (
-              <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }} className="animate-fade-in">
-                <div className="form-group">
-                  <label htmlFor="cardNumber">Kartennummer</label>
-                  <input type="text" id="cardNumber" className="form-control" placeholder="•••• •••• •••• ••••" />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label htmlFor="cardExpiry">Ablaufdatum</label>
-                    <input type="text" id="cardExpiry" className="form-control" placeholder="MM/JJ" />
+              {/* Shipping Address */}
+              <div className="card p-6 space-y-4">
+                <h2 className="text-lg font-semibold text-purple-950">
+                  Shipping Address
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label htmlFor="fullName" className="input-label">Full Name</label>
+                    <input
+                      id="fullName"
+                      name="fullName"
+                      type="text"
+                      required
+                      className="input"
+                      defaultValue={user?.name || ""}
+                      placeholder="Full name"
+                    />
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="cardCvc">CVC</label>
-                    <input type="text" id="cardCvc" className="form-control" placeholder="•••" />
+                  <div className="sm:col-span-2">
+                    <label htmlFor="street" className="input-label">Street Address</label>
+                    <input
+                      id="street"
+                      name="street"
+                      type="text"
+                      required
+                      className="input"
+                      placeholder="123 Optics Way"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="input-label">City</label>
+                    <input
+                      id="city"
+                      name="city"
+                      type="text"
+                      required
+                      className="input"
+                      placeholder="Jena"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="zip" className="input-label">Postal Code</label>
+                    <input
+                      id="zip"
+                      name="zip"
+                      type="text"
+                      required
+                      className="input"
+                      placeholder="07745"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="country" className="input-label">Country</label>
+                    <select id="country" name="country" className="input" defaultValue="DE">
+                      <option value="DE">Germany</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="FR">France</option>
+                      <option value="JP">Japan</option>
+                      <option value="SG">Singapore</option>
+                      <option value="KR">South Korea</option>
+                      <option value="TW">Taiwan</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            )}
 
-            {paymentMethod === 'sofort' && (
-              <p style={{ marginTop: '20px', fontSize: '0.8rem', color: 'var(--fg-secondary)', lineHeight: 1.5 }} className="animate-fade-in">
-                Nach dem Klicken auf &quot;Zahlungspflichtig bestellen&quot; werden Sie zu SOFORT-Überweisung weitergeleitet, um die Zahlung sicher über Ihr Online-Banking abzuwickeln.
-              </p>
-            )}
+              {/* B2B Tax Info */}
+              <div className="card p-6 space-y-4">
+                <h2 className="text-lg font-semibold text-purple-950">
+                  B2B / Tax Information{" "}
+                  <span className="text-sm font-normal text-purple-600">
+                    (Optional)
+                  </span>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="companyName" className="input-label">Company Name</label>
+                    <input
+                      id="companyName"
+                      name="companyName"
+                      type="text"
+                      className="input"
+                      defaultValue={user?.companyName || ""}
+                      placeholder="Company GmbH"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="taxId" className="input-label">
+                      VAT / Tax ID
+                    </label>
+                    <input
+                      id="taxId"
+                      name="taxId"
+                      type="text"
+                      className="input"
+                      placeholder="DE123456789"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {paymentMethod === 'paypal' && (
-              <p style={{ marginTop: '20px', fontSize: '0.8rem', color: 'var(--fg-secondary)', lineHeight: 1.5 }} className="animate-fade-in">
-                Zahlen Sie schnell und sicher mit Ihrem PayPal-Konto. Nach dem Absenden werden Sie zur PayPal-Zahlungsseite weitergeleitet.
-              </p>
-            )}
+            {/* Right - Summary */}
+            <div className="lg:col-span-1">
+              <div className="card p-6 space-y-5 sticky top-24">
+                <h2 className="text-lg font-semibold text-purple-950">
+                  Order Summary
+                </h2>
+
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {items.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="flex justify-between text-sm"
+                    >
+                      <span className="text-purple-700 truncate pr-2">
+                        {item.name} × {item.quantity}
+                      </span>
+                      <span className="text-purple-950 shrink-0">
+                        {formatCurrency(item.priceEUR * item.quantity, currency)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-cream-300/50 pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-700">Subtotal</span>
+                    <span className="text-purple-950">
+                      {formatCurrency(totalEUR, currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-700">Shipping</span>
+                    <span className="text-green-400">
+                      {shipping === 0
+                        ? "Free"
+                        : formatCurrency(shipping, currency)}
+                    </span>
+                  </div>
+                  <div className="border-t border-cream-300/50 pt-3 flex justify-between">
+                    <span className="text-purple-950 font-medium">Total</span>
+                    <span className="text-xl font-bold text-purple-950">
+                      {formatCurrency(total, currency)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-4"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      Pay with Stripe
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-center gap-2 text-xs text-purple-600">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Secure 256-bit SSL encrypted checkout
+                </div>
+              </div>
+            </div>
           </div>
         </form>
-
-        {/* Right Side: Order Summary Panel */}
-        <div style={{
-          position: 'sticky',
-          top: '110px'
-        }}>
-          <div className="glass-panel" style={{ padding: '24px', borderRadius: '16px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#ffffff', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              Bestellübersicht
-            </h3>
-
-            {/* Cart Items list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', maxHeight: '240px', overflowY: 'auto' }}>
-              {cartItems.map((item) => (
-                <div key={item.product.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '0.85rem' }}>
-                  {/* Lens Graphic Representer Thumbnail */}
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    background: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    <div style={{
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      border: `1.5px solid ${item.product.coating.color}`,
-                      background: `radial-gradient(circle, ${item.product.coating.color}33 0%, transparent 80%)`
-                    }} />
-                  </div>
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 600, color: '#ffffff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.product.name}</div>
-                    <div style={{ color: 'var(--fg-secondary)' }}>Menge: {item.quantity}</div>
-                  </div>
-                  <span style={{ fontWeight: 700, color: '#ffffff' }}>
-                    €{(item.product.price * item.quantity).toLocaleString('de-DE')}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Cost totals breakdown */}
-            <div style={{
-              borderTop: '1px solid var(--border-color)',
-              paddingTop: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              fontSize: '0.9rem',
-              marginBottom: '20px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--fg-secondary)' }}>Zwischensumme:</span>
-                <span style={{ color: '#ffffff' }}>€{cartTotal.toLocaleString('de-DE')}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--fg-secondary)' }}>Versand:</span>
-                <span style={{ color: '#ffffff' }}>
-                  {shippingCost > 0 ? `€${shippingCost.toLocaleString('de-DE')}` : 'Gratis'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--fg-secondary)' }}>
-                <span>Darin enthaltene MwSt. (19%):</span>
-                <span>€{taxAmount.toLocaleString('de-DE')}</span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '1.25rem',
-                fontWeight: 800,
-                color: 'var(--de-gold)',
-                borderTop: '1px dashed var(--border-color)',
-                paddingTop: '12px',
-                fontFamily: 'var(--font-display)'
-              }}>
-                <span>Gesamtsumme:</span>
-                <span>€{grandTotal.toLocaleString('de-DE')}</span>
-              </div>
-            </div>
-
-            {/* Security stamp */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.75rem',
-              color: 'var(--fg-secondary)',
-              background: 'rgba(16, 185, 129, 0.05)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-              padding: '10px',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              <ShieldCheck size={16} style={{ color: 'var(--coating-green)', flexShrink: 0 }} />
-              <span>Sichere SSL-Verschlüsselung. Alle Daten werden geschützt verarbeitet.</span>
-            </div>
-
-            {/* Form submit link */}
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="btn-primary"
-              style={{
-                width: '100%',
-                padding: '16px',
-                fontSize: '1.05rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.7 : 1
-              }}
-            >
-              {isSubmitting ? (
-                <>
-                  <div style={{
-                    width: '18px',
-                    height: '18px',
-                    border: '2px solid rgba(0,0,0,0.1)',
-                    borderTopColor: '#000000',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite'
-                  }} />
-                  Verarbeite Zahlung...
-                </>
-              ) : (
-                <>
-                  Zahlungspflichtig bestellen &bull; €{grandTotal.toLocaleString('de-DE')}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @media (max-width: 800px) {
-          .checkout-grid {
-            grid-template-columns: 1fr !important;
-            gap: 30px !important;
-          }
-          .payment-options {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

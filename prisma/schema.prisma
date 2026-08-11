@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("CUSTOMER") // CUSTOMER | ADMIN
+  companyName  String?
+  taxId        String?
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  icon        String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  name           String
+  slug           String      @unique
+  sku            String      @unique
+  categoryId     String
+  category       Category    @relation(fields: [categoryId], references: [id])
+  priceEUR       Float
+  stock          Int         @default(0)
+  isRFQOnly      Boolean     @default(false)
+  technicalSpecs String      @default("{}") // JSON string
+  images         String      @default("[]") // JSON string array
+  description    String
+  featured       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  orderItems     OrderItem[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  totalAmount     Float
+  currency        String      @default("EUR")
+  status          String      @default("PENDING") // PENDING | PAID | QUOTE_REQUESTED | SHIPPED | CANCELLED
+  shippingAddress String      @default("{}") // JSON string
+  trackingNumber  String?
+  notes           String?
+  stripeSessionId String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  priceEUR  Float
+}

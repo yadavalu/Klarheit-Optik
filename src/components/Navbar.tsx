@@ -1,180 +1,268 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { ShoppingBag, Award } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import Link from "next/link";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ShoppingCart,
+  User,
+  Menu,
+  X,
+  ChevronDown,
+  LogOut,
+  LayoutDashboard,
+  Hexagon,
+} from "lucide-react";
+import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
+import { logoutAction } from "@/actions/auth-actions";
 
-export default function Navbar() {
-  const { cartCount, setIsCartOpen } = useCart();
+const navLinks = [
+  { href: "/products", label: "Products" },
+  { href: "/products?category=lithography-equipment", label: "Lithography" },
+  { href: "/products?category=photonic-sensors", label: "Photonics" },
+  { href: "/products?category=photography-lenses", label: "Photography" },
+  { href: "/products?category=optical-filters", label: "Filters" },
+];
+
+const currencies = ["EUR", "USD"];
+
+export function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { items, currency, setCurrency, setIsOpen: setCartOpen } = useCartStore();
+  const { user, setAuthModalOpen, setUser } = useAuthStore();
+
+  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  async function handleLogout() {
+    await logoutAction();
+    setUser(null);
+    setUserMenuOpen(false);
+  }
 
   return (
-    <header className="glass-panel" style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 50,
-      borderRadius: '0 0 16px 16px',
-      borderTop: 'none',
-      borderLeft: 'none',
-      borderRight: 'none'
-    }}>
-      {/* German Flag Ribbon Accent */}
-      <div className="de-ribbon">
-        <div className="de-ribbon-black"></div>
-        <div className="de-ribbon-red"></div>
-        <div className="de-ribbon-gold"></div>
-      </div>
-
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            position: 'relative',
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            border: '2px solid var(--de-gold)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 10px var(--de-gold-glow)'
-          }}>
-            <div style={{
-              width: '18px',
-              height: '18px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, var(--coating-blue) 0%, transparent 80%)',
-              border: '1.5px solid var(--de-red)',
-              opacity: 0.9
-            }}></div>
-          </div>
-          <div>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              fontSize: '1.35rem',
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(to right, #ffffff, #94a3b8)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              KLARHEIT
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 500,
-              fontSize: '0.85rem',
-              letterSpacing: '0.2em',
-              color: 'var(--de-gold)',
-              marginLeft: '4px',
-              textTransform: 'uppercase'
-            }}>
-              Optik
-            </span>
-          </div>
-        </Link>
-
-        {/* Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-          <Link href="/" style={{
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: 'var(--fg-primary)',
-            transition: 'var(--transition-fast)'
-          }} className="nav-link">
-            Startseite
-          </Link>
-          <Link href="/#products" style={{
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: 'var(--fg-secondary)',
-            transition: 'var(--transition-fast)'
-          }} className="nav-link-secondary">
-            Linsen
-          </Link>
-          <Link href="/#engineering" style={{
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: 'var(--fg-secondary)',
-            transition: 'var(--transition-fast)'
-          }} className="nav-link-secondary">
-            Technologie
-          </Link>
-        </nav>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Engineering Seal */}
-          <div className="eng-seal" style={{ display: 'none' /* Hidden on small screens via CSS/JS later, visible here */ }}>
-            <Award size={12} />
-            DE_OPTIK
-          </div>
-
-          {/* Cart Trigger */}
-          <button
-            onClick={() => setIsCartOpen(true)}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              transition: 'var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.borderColor = 'var(--de-gold)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            <ShoppingBag size={18} style={{ color: 'var(--fg-primary)' }} />
-            {cartCount > 0 && (
-              <span className="badge badge-gold" style={{
-                position: 'absolute',
-                top: '-5px',
-                right: '-5px',
-                minWidth: '18px',
-                height: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 6px var(--de-gold-glow)'
-              }}>
-                {cartCount}
+    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-cream-300/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative">
+              <Hexagon
+                className="w-8 h-8 text-purple-600 transition-transform duration-300 group-hover:rotate-90"
+                strokeWidth={1.5}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-purple-950">KO</span>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-purple-950 tracking-wider">
+                KLARHEIT
               </span>
+              <span className="text-[10px] text-purple-700 tracking-[0.3em] -mt-0.5">
+                OPTIK
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="btn-ghost text-sm"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop Right Section */}
+          <div className="hidden md:flex items-center gap-2">
+            {/* Currency Switcher */}
+            <div className="flex items-center bg-white rounded-lg border border-cream-300 overflow-hidden">
+              {currencies.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCurrency(c)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    currency === c
+                      ? "bg-purple-600 text-purple-950"
+                      : "text-purple-700 hover:text-purple-950"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            {/* Cart Button */}
+            <button
+              onClick={() => setCartOpen(true)}
+              className="btn-ghost relative"
+              id="cart-button"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {totalItems > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 rounded-full text-[10px] font-bold flex items-center justify-center text-purple-950"
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </button>
+
+            {/* User Menu */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="btn-ghost flex items-center gap-1.5"
+                  id="user-menu-button"
+                >
+                  <div className="w-7 h-7 rounded-full bg-purple-600/20 border border-purple-600/40 flex items-center justify-center">
+                    <span className="text-xs font-bold text-purple-600">
+                      {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-purple-700" />
+                </button>
+
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="absolute right-0 mt-2 w-56 glass-card p-2"
+                    >
+                      <div className="px-3 py-2 border-b border-cream-300 mb-1">
+                        <p className="text-sm font-medium text-purple-950 truncate">
+                          {user.name || user.email}
+                        </p>
+                        <p className="text-xs text-purple-700 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      {user.role === "ADMIN" && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-purple-800 hover:text-purple-950 hover:bg-cream-200/60 rounded-lg transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-800 hover:text-red-400 hover:bg-cream-200/60 rounded-lg transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true, "login")}
+                className="btn-ghost flex items-center gap-1.5"
+                id="login-button"
+              >
+                <User className="w-5 h-5" />
+                <span className="text-sm">Login</span>
+              </button>
             )}
-          </button>
+          </div>
+
+          {/* Mobile Hamburger */}
+          <div className="flex md:hidden items-center gap-2">
+            <button onClick={() => setCartOpen(true)} className="btn-ghost relative">
+              <ShoppingCart className="w-5 h-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 rounded-full text-[10px] font-bold flex items-center justify-center text-purple-950">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="btn-ghost"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
-      <style jsx global>{`
-        .nav-link:hover {
-          color: var(--de-gold) !important;
-        }
-        .nav-link-secondary:hover {
-          color: var(--fg-primary) !important;
-        }
-        @media (max-width: 640px) {
-          .eng-seal {
-            display: none !important;
-          }
-        }
-      `}</style>
-    </header>
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden overflow-hidden glass border-t border-cream-300/50"
+          >
+            <div className="px-4 py-4 space-y-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2 text-sm text-purple-800 hover:text-purple-950 hover:bg-cream-200/60 rounded-lg transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="border-t border-cream-300/50 pt-2 mt-2">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <span className="text-xs text-purple-700">Currency:</span>
+                  {currencies.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCurrency(c)}
+                      className={`px-3 py-1 text-xs font-medium rounded ${
+                        currency === c
+                          ? "bg-purple-600 text-purple-950"
+                          : "text-purple-700 bg-cream-200"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                {user ? (
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-800 hover:text-red-400"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout ({user.email})
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setAuthModalOpen(true, "login");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-800 hover:text-purple-950"
+                  >
+                    <User className="w-4 h-4" />
+                    Login / Register
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
   );
 }

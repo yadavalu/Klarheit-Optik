@@ -1,411 +1,262 @@
-'use client';
+import Link from "next/link";
+import {
+  ArrowRight,
+  Cpu,
+  Zap,
+  Camera,
+  Filter,
+  ShieldCheck,
+  FileCheck,
+  Globe,
+} from "lucide-react";
+import { getFeaturedProducts, getCategories } from "@/actions/product-actions";
+import { HomeProductCard } from "@/components/HomeProductCard";
 
-import React, { useState, useMemo } from 'react';
-import { Award, Shield, Compass, SlidersHorizontal } from 'lucide-react';
-import { PRODUCTS } from '@/data/products';
-import ProductCard from '@/components/ProductCard';
-import LensVisualizer from '@/components/LensVisualizer';
+const categoryIcons: Record<string, React.ReactNode> = {
+  Cpu: <Cpu className="w-7 h-7" />,
+  Zap: <Zap className="w-7 h-7" />,
+  Camera: <Camera className="w-7 h-7" />,
+  Filter: <Filter className="w-7 h-7" />,
+};
 
-type CategoryFilter = 'all' | 'camera' | 'cinema' | 'specialty';
-type SortOption = 'default' | 'price-asc' | 'price-desc' | 'rating-desc';
+const features = [
+  {
+    icon: <ShieldCheck className="w-6 h-6" />,
+    title: "Export Compliance",
+    description:
+      "Full ITAR, EAR, and EU Dual-Use export compliance. Every shipment includes proper export documentation and end-use verification.",
+  },
+  {
+    icon: <FileCheck className="w-6 h-6" />,
+    title: "Certificate of Analysis",
+    description:
+      "All optical components ship with individual Certificates of Analysis (CoA) including measured performance data and traceability.",
+  },
+  {
+    icon: <Globe className="w-6 h-6" />,
+    title: "Global Shipping",
+    description:
+      "Climate-controlled logistics to 90+ countries. Specialized packaging for sensitive optics with real-time tracking and insurance.",
+  },
+];
 
-export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('default');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Filtering and Sorting logic
-  const filteredAndSortedProducts = useMemo(() => {
-    let result = [...PRODUCTS];
-
-    // Search query filter
-    if (searchQuery.trim() !== '') {
-      result = result.filter(product => 
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.coating.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Category filter
-    if (selectedCategory !== 'all') {
-      result = result.filter(product => product.category === selectedCategory);
-    }
-
-    // Sorting
-    if (sortBy === 'price-asc') {
-      result.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price-desc') {
-      result.sort((a, b) => b.price - a.price);
-    } else if (sortBy === 'rating-desc') {
-      result.sort((a, b) => b.rating - a.rating);
-    }
-
-    return result;
-  }, [selectedCategory, sortBy, searchQuery]);
+export default async function HomePage() {
+  const [featuredProducts, categories] = await Promise.all([
+    getFeaturedProducts(),
+    getCategories(),
+  ]);
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-      
-      {/* 1. HERO SECTION */}
-      <section style={{
-        padding: '100px 0 60px 0',
-        textAlign: 'center',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        {/* Engineering badge */}
-        <div className="eng-seal" style={{ marginBottom: '24px', animation: 'fadeIn 0.8s ease-out' }}>
-          <Award size={14} style={{ color: 'var(--de-gold)' }} />
-          Deutsches Handwerk &bull; Höchste Präzision
+    <div>
+      {/* Hero Section */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-cream-100">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(147,197,253,0.06),transparent_60%)]" />
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: "60px 60px",
+            }}
+          />
+          {/* Animated scan line */}
+          <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-500/40 to-transparent" style={{ animation: "scan-line 8s linear infinite" }} />
         </div>
 
-        <h1 style={{
-          fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
-          lineHeight: 1.1,
-          fontWeight: 800,
-          fontFamily: 'var(--font-display)',
-          marginBottom: '20px',
-          background: 'linear-gradient(to bottom, #ffffff 60%, #94a3b8 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.03em'
-        }}>
-          Deutsche Ingenieurskunst <br />
-          <span style={{
-            background: 'linear-gradient(to right, var(--de-gold), var(--de-red))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            Für Lebendige Farben.
-          </span>
-        </h1>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+          <div className="max-w-3xl">
+            {/* Tag */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-600/10 border border-purple-600/20 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+              <span className="text-xs font-medium text-purple-600 tracking-wider uppercase">
+                Enterprise Optical Systems
+              </span>
+            </div>
 
-        <p style={{
-          fontSize: 'clamp(1rem, 2vw, 1.25rem)',
-          color: 'var(--fg-secondary)',
-          maxWidth: '680px',
-          margin: '0 auto 40px auto',
-          lineHeight: 1.6,
-          fontWeight: 400
-        }}>
-          Entwickelt in den traditionsreichsten optischen Werken Deutschlands. Unsere Linsen verbinden makellose Schärfe mit atemberaubenden, farbigen Reflexen.
-        </p>
+            {/* Heading */}
+            <h1 className="font-hero text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+              <span className="gradient-text">Precision Optics</span>
+              <br />
+              <span className="text-purple-950">
+                for Science & Industry
+              </span>
+            </h1>
 
-        {/* Hero CTA buttons */}
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="#products" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-            Kollektion Erkunden
-          </a>
-          <a href="#visualizer" className="btn-secondary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-            Vergütung Testen
-          </a>
-        </div>
-      </section>
-
-      {/* Germany and Flag visual line dividers */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: '20px 0 80px 0',
-        gap: '12px'
-      }}>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, var(--border-color))' }}></div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--de-black)', border: '1px solid rgba(255,255,255,0.1)' }}></div>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--de-red)' }}></div>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--de-gold)' }}></div>
-        </div>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, var(--border-color))' }}></div>
-      </div>
-
-      {/* 2. INTERACTIVE VISUALIZER */}
-      <section id="visualizer" style={{ scrollMarginTop: '100px' }}>
-        <LensVisualizer />
-      </section>
-
-      {/* 3. CATALOG & PRODUCTS SECTION */}
-      <section id="products" style={{ scrollMarginTop: '100px', margin: '80px 0' }}>
-        
-        {/* Section Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          marginBottom: '40px',
-          flexWrap: 'wrap',
-          gap: '24px'
-        }}>
-          <div>
-            <span style={{
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: 'var(--de-gold)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'block',
-              marginBottom: '8px'
-            }}>
-              Katalog
-            </span>
-            <h2 style={{ fontSize: '2.2rem', color: '#ffffff', fontFamily: 'var(--font-display)' }}>
-              Unsere Linsen-Kollektion
-            </h2>
-          </div>
-
-          {/* Search bar */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            padding: '4px 12px',
-            width: '100%',
-            maxWidth: '300px'
-          }}>
-            <input
-              type="text"
-              placeholder="Suchen nach Name or Coating..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '0.9rem',
-                outline: 'none',
-                padding: '8px 0'
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Filter and Sorting Controls */}
-        <div className="glass-panel" style={{
-          padding: '16px 24px',
-          marginBottom: '32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-          borderRadius: '16px'
-        }}>
-          {/* Category Tabs */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {[
-              { id: 'all', label: 'Alle Linsen' },
-              { id: 'camera', label: 'Kamera-Linsen' },
-              { id: 'cinema', label: 'Kino-Linsen' },
-              { id: 'specialty', label: 'Spezial-Objektive' }
-            ].map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id as CategoryFilter)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  background: selectedCategory === cat.id ? 'var(--de-gold)' : 'rgba(255, 255, 255, 0.02)',
-                  color: selectedCategory === cat.id ? 'var(--de-black)' : 'var(--fg-secondary)',
-                  border: selectedCategory === cat.id ? '1px solid var(--de-gold)' : '1px solid var(--border-color)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Sort dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <SlidersHorizontal size={14} style={{ color: 'var(--fg-secondary)' }} />
-            <span style={{ fontSize: '0.85rem', color: 'var(--fg-secondary)' }}>Sortieren:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              style={{
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '0.85rem',
-                color: '#ffffff',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="default">Standard</option>
-              <option value="price-asc">Preis: Niedrig zu Hoch</option>
-              <option value="price-desc">Preis: Hoch zu Niedrig</option>
-              <option value="rating-desc">Beste Bewertungen</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Product Cards Grid */}
-        {filteredAndSortedProducts.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '60px 0',
-            color: 'var(--fg-secondary)',
-            border: '1px dashed var(--border-color)',
-            borderRadius: '16px'
-          }}>
-            <p style={{ fontSize: '1.1rem' }}>Keine Linsen entsprechen Ihrer Suche.</p>
-            <button
-              onClick={() => { setSelectedCategory('all'); setSortBy('default'); setSearchQuery(''); }}
-              className="btn-secondary"
-              style={{ marginTop: '16px' }}
-            >
-              Filter zurücksetzen
-            </button>
-          </div>
-        ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '30px'
-          }}>
-            {filteredAndSortedProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 4. GERMAN ENGINEERING STANDARDS HIGHLIGHT SECTION */}
-      <section id="engineering" className="glass-panel" style={{
-        padding: '60px 40px',
-        borderRadius: '24px',
-        margin: '100px 0',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Subtle German ribbon border on left */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '4px',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div style={{ flex: 1, backgroundColor: 'var(--de-black)' }} />
-          <div style={{ flex: 1, backgroundColor: 'var(--de-red)' }} />
-          <div style={{ flex: 1, backgroundColor: 'var(--de-gold)' }} />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', alignItems: 'center' }} className="eng-grid">
-          <div>
-            <span style={{
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: 'var(--de-gold)',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              display: 'block',
-              marginBottom: '8px'
-            }}>
-              Ingenieurskunst
-            </span>
-            <h2 style={{
-              fontSize: '2.2rem',
-              color: '#ffffff',
-              marginBottom: '20px',
-              fontFamily: 'var(--font-display)'
-            }}>
-              Warum deutsche Optik unübertroffen ist
-            </h2>
-            <p style={{ color: 'var(--fg-secondary)', fontSize: '1rem', lineHeight: '1.7', marginBottom: '24px' }}>
-              Die Qualität einer Linse entscheidet sich nicht nur im Labor, sondern durch jahrzehntelange Erfahrung. Jede Klarheit-Linse durchläuft in unseren Werken in Wetzlar und Oberkochen über 200 optische und mechanische Tests, um absolute Perfektion zu garantieren.
+            {/* Subheading */}
+            <p className="text-lg text-purple-800 leading-relaxed mb-10 max-w-xl">
+              From EUV lithography lenses to broadband photodetectors —
+              engineered optical components with nanometer-class precision.
+              B2B export quotes and direct purchase.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                <Compass style={{ color: 'var(--de-gold)', flexShrink: 0, marginTop: '2px' }} size={20} />
-                <div>
-                  <h4 style={{ color: '#ffffff', fontSize: '1rem', marginBottom: '4px' }}>Achromatische Korrektur</h4>
-                  <p style={{ color: 'var(--fg-secondary)', fontSize: '0.85rem' }}>Eliminiert Farbsäume vollständig und liefert extrem scharfe Übergänge.</p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                <Shield style={{ color: 'var(--de-red)', flexShrink: 0, marginTop: '2px' }} size={20} />
-                <div>
-                  <h4 style={{ color: '#ffffff', fontSize: '1rem', marginBottom: '4px' }}>Robuste Versiegelung</h4>
-                  <p style={{ color: 'var(--fg-secondary)', fontSize: '0.85rem' }}>Gegen Feuchtigkeit und Staub geschützt - bereit für arktische Kälte oder Wüstenstürme.</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Graphical lens diagram representation */}
-          <div style={{
-            position: 'relative',
-            height: '320px',
-            background: 'rgba(0, 0, 0, 0.4)',
-            borderRadius: '16px',
-            border: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden'
-          }}>
-            {/* Visual simulation of glass refraction elements inside barrel */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              position: 'relative',
-              width: '80%',
-              justifyContent: 'space-between'
-            }}>
-              {/* Convex element */}
-              <div style={{ width: '12px', height: '140px', borderRadius: '50% 50% 50% 50% / 10% 10% 10% 10%', background: 'rgba(255,255,255,0.05)', border: '2.5px solid var(--coating-blue)', boxShadow: '0 0 15px rgba(0, 163, 255, 0.3)' }} />
-              {/* Concave element */}
-              <div style={{ width: '8px', height: '100px', borderRadius: '10% 10% 10% 10% / 50% 50% 50% 50%', background: 'rgba(255,255,255,0.02)', border: '2px solid var(--coating-red)', boxShadow: '0 0 10px rgba(222, 38, 62, 0.2)' }} />
-              {/* Double Convex */}
-              <div style={{ width: '18px', height: '120px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '2px solid var(--coating-gold)', boxShadow: '0 0 12px rgba(255, 204, 0, 0.2)' }} />
-              {/* Thin Flat element */}
-              <div style={{ width: '6px', height: '80px', borderRadius: '2px', background: 'rgba(255,255,255,0.02)', border: '1.5px solid var(--coating-green)' }} />
-              {/* Rear element */}
-              <div style={{ width: '10px', height: '90px', borderRadius: '50% 50% 50% 50% / 20% 20% 20% 20%', background: 'rgba(255,255,255,0.05)', border: '2.5px solid var(--coating-purple)', boxShadow: '0 0 15px rgba(217, 70, 239, 0.3)' }} />
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-4">
+              <Link href="/products" className="btn-primary flex items-center gap-2 text-base">
+                Browse Industrial Optics
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/products?rfq=true"
+                className="btn-secondary flex items-center gap-2 text-base"
+              >
+                Request Photonic Quote
+              </Link>
             </div>
 
-            {/* Glowing path lines showing refraction */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-              <path d="M 10 160 Q 90 140 180 160 T 350 160" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeDasharray="5,5" />
-              <path d="M 10 160 Q 90 120 180 155 T 350 160" fill="none" stroke="var(--de-gold)" strokeWidth="1.5" opacity="0.6" />
-              <path d="M 10 160 Q 90 200 180 165 T 350 160" fill="none" stroke="var(--coating-blue)" strokeWidth="1" opacity="0.4" />
-            </svg>
-
-            <span style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              fontFamily: 'monospace',
-              fontSize: '0.65rem',
-              color: 'var(--fg-secondary)'
-            }}>
-              LINSEN-SCHEMATIK V.08
-            </span>
+            {/* Stats */}
+            <div className="flex gap-8 mt-16">
+              {[
+                { value: "90+", label: "Countries" },
+                { value: "500+", label: "Products" },
+                { value: "ISO 9001", label: "Certified" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="text-2xl font-bold text-purple-950">{stat.value}</p>
+                  <p className="text-xs text-purple-600 mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <style jsx global>{`
-        @media (max-width: 800px) {
-          .eng-grid {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
-          }
-        }
-      `}</style>
+      {/* Category Grid */}
+      <section className="py-20 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-hero text-3xl font-bold text-purple-950 mb-3">
+              Optical Categories
+            </h2>
+            <p className="text-purple-700 max-w-lg mx-auto">
+              Explore our comprehensive range of precision optical systems and
+              components
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {categories.map((category, i) => (
+              <Link
+                key={category.id}
+                href={`/products?category=${category.slug}`}
+                className="group"
+              >
+                <div
+                  className="glass-card p-6 h-full flex flex-col"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-purple-600/10 border border-purple-600/20 flex items-center justify-center text-purple-600 mb-4 group-hover:bg-purple-600/20 transition-colors">
+                    {categoryIcons[category.icon || "Filter"]}
+                  </div>
+                  <h3 className="text-lg font-semibold text-purple-950 mb-2 group-hover:text-purple-600 transition-colors">
+                    {category.name}
+                  </h3>
+                  <p className="text-sm text-purple-700 flex-1 line-clamp-3">
+                    {category.description}
+                  </p>
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-cream-300/50">
+                    <span className="text-xs text-purple-600">
+                      {category._count.products} products
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-purple-600 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="py-20 bg-cream-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h2 className="font-hero text-3xl font-bold text-purple-950 mb-2">
+                Featured Products
+              </h2>
+              <p className="text-purple-700">
+                Top-selling optical components and systems
+              </p>
+            </div>
+            <Link
+              href="/products"
+              className="btn-ghost flex items-center gap-1.5 text-sm"
+            >
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredProducts.map((product) => (
+              <HomeProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-hero text-3xl font-bold text-purple-950 mb-3">
+              Enterprise-Grade Service
+            </h2>
+            <p className="text-purple-700 max-w-lg mx-auto">
+              Trusted by semiconductor fabs, research institutions, and optics
+              integrators worldwide
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="glass-card p-6 text-center"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-600/10 border border-purple-600/20 flex items-center justify-center text-purple-600 mx-auto mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-semibold text-purple-950 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-purple-700 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-cream-50" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-hero text-3xl font-bold text-purple-950 mb-4">
+            Need Custom Optical Solutions?
+          </h2>
+          <p className="text-lg text-purple-800 mb-8 max-w-xl mx-auto">
+            Our optical engineers can design and manufacture custom components to
+            your exact specifications.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              href="/products?rfq=true"
+              className="btn-primary flex items-center gap-2"
+            >
+              Request a Quote
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/products" className="btn-secondary">
+              Browse Catalog
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
